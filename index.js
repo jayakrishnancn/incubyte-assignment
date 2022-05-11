@@ -3,43 +3,36 @@ const Add = (s) => {
     return 0;
   }
 
-  let delimiter = "";
-  let paramString = s;
-  let delimiterExp = /[\n,]+/;
-  let customDelimiter;
-  let sum = 0;
-  const negativeArr = [];
-  const invalidNums = [];
-
-  if (/^[/]{2}.\n/.test(s)) {
-    customDelimiter = s.charAt(2);
-    delimiter = `[\\n,${customDelimiter}]+`;
-    paramString = s.slice(4);
-    delimiterExp = RegExp(delimiter);
+  // check delimiter , first 3 chars, remove first 4 chars if found
+  let delimiter = ",";
+  if (/^\/\/.\n/.test(s)) {
+    delimiter = s[2];
+    s = s.substring(4, s.length);
   }
 
-  const arr = paramString.split(delimiterExp);
-  arr.forEach((element) => {
-    let num = Number(element);
-    if (Number.isNaN(num)) {
-      invalidNums.push(element);
-      num = 0;
-    }
-    if (num < 0) {
-      negativeArr.push(num);
-    } else if (num > 1000) {
-      num = 0;
-    }
-    sum += num;
-  });
-  const isNegativeCountOdd = negativeArr.length % 2 === 1;
-  const hasInvalidNumbers = invalidNums.length > 0;
-  if (isNegativeCountOdd) {
-    throw new Error(`negatives not allowed: ${negativeArr.join(",")}`);
+  // check invalid chars ie. chars that are not in \d - , delimiter
+  // ([^\d-,\n\;]+)
+  const inValidItems = [...s.matchAll("([^\\d-,\n" + delimiter + "]+)")]
+    .map((i) => i[0])
+    .filter((i) => i.length > 0);
+  if (inValidItems.length > 0) {
+    throw new Error(`Invalid numbers passed: ${inValidItems.join(",")}`);
   }
-  if (hasInvalidNumbers) {
-    throw new Error(`Invalid numbers passed: ${invalidNums.join(",")}`);
+
+  // replace all to delimiter, other than \d - and delimiter
+  // ([^\d-;]+) - also replace comma with delim
+  const REGEX = new RegExp("[^\\d-" + delimiter + "]", "g");
+  s = s.replace(REGEX, delimiter).split(delimiter).map(Number);
+
+  // find negatives
+  const negatives = s.filter((i) => i < 0);
+  if (negatives.length % 2 === 1) {
+    throw new Error(`negatives not allowed: ${negatives.join(",")}`);
   }
-  return sum;
+
+  // remove > 1000 and return sum;
+  s = s.filter((i) => i <= 1000);
+  return s.reduce((prev, curr) => prev + curr || 0, 0);
 };
+
 module.exports = Add;
